@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const API_URL = "http://localhost:8000";
 
@@ -9,6 +9,8 @@ export default function App() {
   const [dueDate, setDueDate] = useState("");
   const [selected, setSelected] = useState(null);
   const [adding, setAdding] = useState(false);
+  const [draggingId, setDraggingId] = useState(null);
+  const dragId = useRef(null);
 
   async function loadTodos() {
     const res = await fetch(`${API_URL}/todos`);
@@ -38,6 +40,31 @@ export default function App() {
   async function toggleDone(todo) {
     await fetch(`${API_URL}/todos/${todo.id}?done=${!todo.done}`, { method: "PATCH" });
     loadTodos();
+  }
+
+  function handleDragStart(id) {
+    dragId.current = id;
+    setDraggingId(id);
+  }
+
+  function handleDragOver(e, targetId) {
+    e.preventDefault();
+    if (!dragId.current || dragId.current === targetId) return;
+    setTodos((prev) => {
+      const fromIdx = prev.findIndex((t) => t.id === dragId.current);
+      const toIdx = prev.findIndex((t) => t.id === targetId);
+      if (fromIdx === -1 || toIdx === -1) return prev;
+      if (prev[fromIdx].done !== prev[toIdx].done) return prev;
+      const next = [...prev];
+      const [item] = next.splice(fromIdx, 1);
+      next.splice(toIdx, 0, item);
+      return next;
+    });
+  }
+
+  function handleDragEnd() {
+    dragId.current = null;
+    setDraggingId(null);
   }
 
   const open = todos.filter((t) => !t.done);
@@ -119,6 +146,10 @@ export default function App() {
                   expanded={selected === todo.id}
                   onToggleExpand={() => setSelected(selected === todo.id ? null : todo.id)}
                   onToggleDone={() => toggleDone(todo)}
+                  dragging={draggingId === todo.id}
+                  onDragStart={handleDragStart}
+                  onDragOver={handleDragOver}
+                  onDragEnd={handleDragEnd}
                 />
               ))}
             </ul>
@@ -136,6 +167,10 @@ export default function App() {
                   expanded={selected === todo.id}
                   onToggleExpand={() => setSelected(selected === todo.id ? null : todo.id)}
                   onToggleDone={() => toggleDone(todo)}
+                  dragging={draggingId === todo.id}
+                  onDragStart={handleDragStart}
+                  onDragOver={handleDragOver}
+                  onDragEnd={handleDragEnd}
                 />
               ))}
             </ul>
@@ -146,10 +181,17 @@ export default function App() {
   );
 }
 
-function TodoCard({ todo, expanded, onToggleExpand, onToggleDone }) {
+function TodoCard({ todo, expanded, onToggleExpand, onToggleDone, dragging, onDragStart, onDragOver, onDragEnd }) {
   return (
-    <li className={`todo-card ${todo.done ? "todo-done" : ""}`}>
+    <li
+      className={`todo-card ${todo.done ? "todo-done" : ""} ${dragging ? "dragging" : ""}`}
+      draggable
+      onDragStart={() => onDragStart(todo.id)}
+      onDragOver={(e) => onDragOver(e, todo.id)}
+      onDragEnd={onDragEnd}
+    >
       <div className="todo-row">
+        <span className="drag-handle" title="Drag to reorder">⠿</span>
         <button
           className={`check-btn ${todo.done ? "checked" : ""}`}
           onClick={onToggleDone}
