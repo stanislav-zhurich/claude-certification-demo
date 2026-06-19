@@ -240,12 +240,34 @@ body {
   border-radius: var(--radius);
   padding: 0.9rem 1.1rem;
   box-shadow: var(--shadow-sm);
-  transition: box-shadow .15s, transform .15s;
+  transition: box-shadow .15s, transform .15s, opacity .15s;
+  cursor: default;
 }
 
 .todo-card:hover {
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
+}
+
+.todo-card.dragging {
+  opacity: 0.35;
+  box-shadow: none;
+  transform: none;
+}
+
+.drag-handle {
+  color: var(--border);
+  cursor: grab;
+  font-size: 1.1rem;
+  line-height: 1;
+  user-select: none;
+  padding: 0 2px;
+  flex-shrink: 0;
+  transition: color .12s;
+}
+
+.todo-card:hover .drag-handle {
+  color: var(--text-muted);
 }
 
 .todo-done {
